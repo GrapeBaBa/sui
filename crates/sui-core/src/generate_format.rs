@@ -11,6 +11,7 @@ use pretty_assertions::assert_str_eq;
 use serde_reflection::{Registry, Result, Samples, Tracer, TracerConfig};
 use signature::Signer;
 use std::{fs::File, io::Write};
+use std::path::PathBuf;
 use sui_types::{
     base_types::{self, ObjectDigest, ObjectID, TransactionDigest, TransactionEffectsDigest},
     crypto::{
@@ -24,6 +25,8 @@ use sui_types::{
     object::{Data, Owner},
     storage::DeleteKind,
 };
+use sui_types::intent::IntentMessage;
+use sui_types::messages::TransactionData;
 use typed_store::rocks::TypedStoreError;
 
 fn get_registry() -> Result<Registry> {
@@ -89,6 +92,8 @@ fn get_registry() -> Result<Registry> {
     tracer.trace_type::<MoveTypeLayout>(&samples)?;
     tracer.trace_type::<base_types::SuiAddress>(&samples)?;
     tracer.trace_type::<DeleteKind>(&samples)?;
+    tracer.trace_type::<IntentMessage<TransactionData>>(&samples)?;
+    tracer.trace_type::<TransactionData>(&samples)?;
 
     tracer.registry()
 }
@@ -111,6 +116,54 @@ struct Options {
 }
 
 const FILE_PATH: &str = "sui-core/tests/staged/sui.yaml";
+
+#[test]
+fn test_generate_transaction_data() {
+    // let mut config = TracerConfig::default().is_human_readable(true).record_samples_for_structs(true).record_samples_for_tuple_structs(true);
+    // config.is_human_readable(true);
+    // config.record_samples_for_structs(true);
+    // config.record_samples_for_structs(true);
+    // let mut tracer = Tracer::new(config);
+    // let samples = Samples::new();
+
+    // tracer.trace_type::<SuiAddress>(&samples).unwrap();
+    // tracer.trace_type::<IntentMessage<TransactionData>>(&samples).unwrap();
+    // tracer.trace_type::<TransactionData>(&samples).unwrap();
+    // tracer.trace_type::<TransactionKind>(&samples).unwrap();
+    // tracer.trace_type::<SingleTransactionKind>(&samples).unwrap();
+    // tracer.trace_type::<CallArg>(&samples).unwrap();
+    // tracer.trace_type::<Data>(&samples).unwrap();
+    // tracer.trace_type::<Owner>(&samples).unwrap();
+    // tracer.trace_type::<TypeTag>(&samples).unwrap();
+    // tracer.trace_type::<ObjectArg>(&samples).unwrap();
+    // tracer.trace_type::<ObjectDigest>(&samples).unwrap();
+    // tracer.trace_type::<Readable<Base64,Bytes>>(&samples).unwrap();
+    // tracer.trace_type::<ObjectDigest>(&samples).unwrap();
+
+    // tracer.trace_type::<ObjectRef>(&samples).unwrap();
+    // tracer.trace_type::<Identifier>(&samples).unwrap();
+    // tracer.trace_type::<TypeTag>(&samples).unwrap();
+    // tracer.trace_type::<Vec<TypeTag>>(&samples).unwrap();
+    // tracer.trace_type::<CallArg>(&samples).unwrap();
+    // tracer.trace_type::<ObjectArg>(&samples).unwrap();
+    // tracer.trace_type::<ObjectID>(&samples).unwrap();
+    // tracer.trace_type::<SequenceNumber>(&samples).unwrap();
+    // tracer.trace_type::<Vec<ObjectArg>>(&samples).unwrap();
+    // tracer.trace_type::<Box<TypeTag>>(&samples).unwrap();
+    // tracer.trace_type::<StructTag>(&samples).unwrap();
+    // tracer.trace_type::<Box<StructTag>>(&samples).unwrap();
+    // tracer.trace_type::<AccountAddress>(&samples).unwrap();
+    // tracer.trace_type::<SingleTransactionKind>(&samples).unwrap();
+    let dir = PathBuf::from("/Users/kaichen/Documents/projects/sui/crates/sui-core");
+    let registry = get_registry().unwrap();
+    let config =
+        serde_generate::CodeGeneratorConfig::new("testing".to_string()).with_encodings(vec![serde_generate::Encoding::Bcs]);
+    let generator = serde_generate::java::CodeGenerator::new(&config);
+
+    generator
+        .write_source_files(dir, &registry)
+        .unwrap();
+}
 
 fn main() {
     let options = Options::parse();
