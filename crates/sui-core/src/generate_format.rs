@@ -2,16 +2,15 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 use clap::*;
-use move_core_types::{
-    language_storage::TypeTag,
-    value::{MoveStructLayout, MoveTypeLayout},
-    vm_status::AbortLocation,
-};
+use move_core_types::{language_storage::TypeTag, u256, value::{MoveStructLayout, MoveTypeLayout}, vm_status::AbortLocation};
 use pretty_assertions::assert_str_eq;
 use serde_reflection::{Registry, Result, Samples, Tracer, TracerConfig};
 use signature::Signer;
 use std::{fs::File, io::Write};
 use std::path::PathBuf;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::StructTag;
 use sui_types::{
     base_types::{self, ObjectDigest, ObjectID, TransactionDigest, TransactionEffectsDigest},
     crypto::{
@@ -28,6 +27,37 @@ use sui_types::{
 use sui_types::intent::IntentMessage;
 use sui_types::messages::TransactionData;
 use typed_store::rocks::TypedStoreError;
+use serde::{Deserialize, Serialize};
+use sui_json_rpc_types::{SuiMoveStruct, SuiMoveValue};
+
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub enum MoveStruct {
+    /// The representation used by the MoveVM
+    Runtime(Vec<MoveValue>),
+    /// A decorated representation with human-readable field names
+    WithFields(Vec<(Identifier, MoveValue)>),
+    /// An even more decorated representation with both types and human-readable field names
+    WithTypes {
+        type_: StructTag,
+        fields: Vec<(Identifier, MoveValue)>,
+    },
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Eq, Clone)]
+pub enum MoveValue {
+    U8(u8),
+    U64(u64),
+    U128(u128),
+    Bool(bool),
+    Address(AccountAddress),
+    Vector(Vec<MoveValue>),
+    Struct(MoveStruct),
+    Signer(AccountAddress),
+    // NOTE: Added in bytecode version v6, do not reorder!
+    U16(u16),
+    U32(u32),
+    U256(u256::U256),
+}
 
 fn get_registry() -> Result<Registry> {
     let config = TracerConfig::default()
@@ -94,6 +124,8 @@ fn get_registry() -> Result<Registry> {
     tracer.trace_type::<DeleteKind>(&samples)?;
     tracer.trace_type::<IntentMessage<TransactionData>>(&samples)?;
     tracer.trace_type::<TransactionData>(&samples)?;
+    tracer.trace_type::<SuiMoveValue>(&samples)?;
+    tracer.trace_type::<SuiMoveStruct>(&samples)?;
 
     tracer.registry()
 }
