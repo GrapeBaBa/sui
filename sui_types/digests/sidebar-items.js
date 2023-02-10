@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["CheckpointContentsDigest",""],["CheckpointDigest","Representation of a Checkpoint’s digest"],["ObjectDigest",""],["Sha3Digest","A representation of a SHA3-256 Digest"],["TransactionDigest","A transaction will have a (unique) digest."],["TransactionEffectsDigest",""]]};
